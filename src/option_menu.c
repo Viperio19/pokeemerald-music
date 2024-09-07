@@ -15,25 +15,28 @@
 #include "window.h"
 #include "gba/m4a_internal.h"
 #include "constants/rgb.h"
+#include "constants/songs.h"
 
 #define tMenuSelection data[0]
 #define tTextSpeed data[1]
 #define tBattleSceneOff data[2]
 #define tBattleStyle data[3]
 #define tSound data[4]
-#define tButtonMode data[5]
-#define tWindowFrameType data[6]
+#define tTrack data[5]
+#define tButtonMode data[6]
+#define tWindowFrameType data[7]
 
 enum
 {
+    MENUITEM_SOUND,
+    MENUITEM_TRACK,
+    MENUITEM_COUNT,
+    MENUITEM_CANCEL,
+    MENUITEM_FRAMETYPE,
     MENUITEM_TEXTSPEED,
     MENUITEM_BATTLESCENE,
     MENUITEM_BATTLESTYLE,
-    MENUITEM_SOUND,
     MENUITEM_BUTTONMODE,
-    MENUITEM_FRAMETYPE,
-    MENUITEM_CANCEL,
-    MENUITEM_COUNT,
 };
 
 enum
@@ -46,6 +49,7 @@ enum
 #define YPOS_BATTLESCENE  (MENUITEM_BATTLESCENE * 16)
 #define YPOS_BATTLESTYLE  (MENUITEM_BATTLESTYLE * 16)
 #define YPOS_SOUND        (MENUITEM_SOUND * 16)
+#define YPOS_TRACK        (MENUITEM_TRACK * 16)
 #define YPOS_BUTTONMODE   (MENUITEM_BUTTONMODE * 16)
 #define YPOS_FRAMETYPE    (MENUITEM_FRAMETYPE * 16)
 
@@ -62,6 +66,8 @@ static u8 BattleStyle_ProcessInput(u8 selection);
 static void BattleStyle_DrawChoices(u8 selection);
 static u8 Sound_ProcessInput(u8 selection);
 static void Sound_DrawChoices(u8 selection);
+static u8 Track_ProcessInput(u8 selection);
+static void Track_DrawChoices(u8 selection);
 static u8 FrameType_ProcessInput(u8 selection);
 static void FrameType_DrawChoices(u8 selection);
 static u8 ButtonMode_ProcessInput(u8 selection);
@@ -76,15 +82,29 @@ static const u16 sOptionMenuText_Pal[] = INCBIN_U16("graphics/interface/option_m
 // note: this is only used in the Japanese release
 static const u8 sEqualSignGfx[] = INCBIN_U8("graphics/interface/option_menu_equals_sign.4bpp");
 
+// static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
+// {
+//     [MENUITEM_TEXTSPEED]   = gText_TextSpeed,
+//     [MENUITEM_BATTLESCENE] = gText_BattleScene,
+//     [MENUITEM_BATTLESTYLE] = gText_BattleStyle,
+//     [MENUITEM_SOUND]       = gText_Sound,
+//     [MENUITEM_BUTTONMODE]  = gText_ButtonMode,
+//     [MENUITEM_FRAMETYPE]   = gText_Frame,
+//     [MENUITEM_CANCEL]      = gText_OptionMenuCancel,
+// };
+
+// Viperio | Music Showcase - new option menu
 static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
 {
-    [MENUITEM_TEXTSPEED]   = gText_TextSpeed,
-    [MENUITEM_BATTLESCENE] = gText_BattleScene,
-    [MENUITEM_BATTLESTYLE] = gText_BattleStyle,
     [MENUITEM_SOUND]       = gText_Sound,
-    [MENUITEM_BUTTONMODE]  = gText_ButtonMode,
-    [MENUITEM_FRAMETYPE]   = gText_Frame,
-    [MENUITEM_CANCEL]      = gText_OptionMenuCancel,
+    [MENUITEM_TRACK]       = gText_Track,
+};
+
+static const struct Tracks tracks[] =
+{
+    {_("VS GYM LEADER  "), MUS_VS_GYM_LEADER},
+    {_("VS RAYQUAZA    "), MUS_VS_RAYQUAZA},
+    {_("VS LEADER GYM  "), MUS_VS_GYM_LEADER},
 };
 
 static const struct WindowTemplate sOptionMenuWinTemplates[] =
@@ -232,16 +252,20 @@ void CB2_InitOptionMenu(void)
         gTasks[taskId].tBattleSceneOff = gSaveBlock2Ptr->optionsBattleSceneOff;
         gTasks[taskId].tBattleStyle = gSaveBlock2Ptr->optionsBattleStyle;
         gTasks[taskId].tSound = gSaveBlock2Ptr->optionsSound;
+        gTasks[taskId].tTrack = gSaveBlock2Ptr->optionsTrack;
         gTasks[taskId].tButtonMode = gSaveBlock2Ptr->optionsButtonMode;
         gTasks[taskId].tWindowFrameType = gSaveBlock2Ptr->optionsWindowFrameType;
 
-        TextSpeed_DrawChoices(gTasks[taskId].tTextSpeed);
-        BattleScene_DrawChoices(gTasks[taskId].tBattleSceneOff);
-        BattleStyle_DrawChoices(gTasks[taskId].tBattleStyle);
+        // TextSpeed_DrawChoices(gTasks[taskId].tTextSpeed);
+        // BattleScene_DrawChoices(gTasks[taskId].tBattleSceneOff);
+        // BattleStyle_DrawChoices(gTasks[taskId].tBattleStyle);
+        // Sound_DrawChoices(gTasks[taskId].tSound);
+        // ButtonMode_DrawChoices(gTasks[taskId].tButtonMode);
+        // FrameType_DrawChoices(gTasks[taskId].tWindowFrameType);
+        // HighlightOptionMenuItem(gTasks[taskId].tMenuSelection);
+
         Sound_DrawChoices(gTasks[taskId].tSound);
-        ButtonMode_DrawChoices(gTasks[taskId].tButtonMode);
-        FrameType_DrawChoices(gTasks[taskId].tWindowFrameType);
-        HighlightOptionMenuItem(gTasks[taskId].tMenuSelection);
+        Track_DrawChoices(gTasks[taskId].tTrack);
 
         CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
         gMain.state++;
@@ -268,21 +292,21 @@ static void Task_OptionMenuProcessInput(u8 taskId)
         if (gTasks[taskId].tMenuSelection == MENUITEM_CANCEL)
             gTasks[taskId].func = Task_OptionMenuSave;
     }
-    else if (JOY_NEW(B_BUTTON))
-    {
-        gTasks[taskId].func = Task_OptionMenuSave;
-    }
+    // else if (JOY_NEW(B_BUTTON))
+    // {
+    //     gTasks[taskId].func = Task_OptionMenuSave;
+    // }
     else if (JOY_NEW(DPAD_UP))
     {
         if (gTasks[taskId].tMenuSelection > 0)
             gTasks[taskId].tMenuSelection--;
         else
-            gTasks[taskId].tMenuSelection = MENUITEM_CANCEL;
+            gTasks[taskId].tMenuSelection = MENUITEM_TRACK;
         HighlightOptionMenuItem(gTasks[taskId].tMenuSelection);
     }
     else if (JOY_NEW(DPAD_DOWN))
     {
-        if (gTasks[taskId].tMenuSelection < MENUITEM_CANCEL)
+        if (gTasks[taskId].tMenuSelection < MENUITEM_TRACK)
             gTasks[taskId].tMenuSelection++;
         else
             gTasks[taskId].tMenuSelection = 0;
@@ -321,6 +345,13 @@ static void Task_OptionMenuProcessInput(u8 taskId)
 
             if (previousOption != gTasks[taskId].tSound)
                 Sound_DrawChoices(gTasks[taskId].tSound);
+            break;
+        case MENUITEM_TRACK:
+            previousOption = gTasks[taskId].tTrack;
+            gTasks[taskId].tTrack = Track_ProcessInput(gTasks[taskId].tTrack);
+
+            if (previousOption != gTasks[taskId].tTrack)
+                Track_DrawChoices(gTasks[taskId].tTrack);
             break;
         case MENUITEM_BUTTONMODE:
             previousOption = gTasks[taskId].tButtonMode;
@@ -511,6 +542,36 @@ static void Sound_DrawChoices(u8 selection)
     DrawOptionMenuChoice(gText_SoundStereo, GetStringRightAlignXOffset(FONT_NORMAL, gText_SoundStereo, 198), YPOS_SOUND, styles[1]);
 }
 
+static u8 Track_ProcessInput(u8 selection)
+{
+    if (JOY_NEW(DPAD_RIGHT))
+    {
+        if (selection < TRACKS_COUNT - 1)
+            selection++;
+        else
+            selection = 0;
+
+        PlayMapChosenOrBattleBGM(tracks[selection].song);
+        sArrowPressed = TRUE;
+    }
+    if (JOY_NEW(DPAD_LEFT))
+    {
+        if (selection != 0)
+            selection--;
+        else
+            selection = TRACKS_COUNT - 1;
+
+        PlayMapChosenOrBattleBGM(tracks[selection].song);
+        sArrowPressed = TRUE;
+    }
+    return selection;
+}
+
+static void Track_DrawChoices(u8 selection)
+{
+    DrawOptionMenuChoice(tracks[selection].name, 104, YPOS_TRACK, 0);
+}
+
 static u8 FrameType_ProcessInput(u8 selection)
 {
     if (JOY_NEW(DPAD_RIGHT))
@@ -618,7 +679,7 @@ static void ButtonMode_DrawChoices(u8 selection)
 static void DrawHeaderText(void)
 {
     FillWindowPixelBuffer(WIN_HEADER, PIXEL_FILL(1));
-    AddTextPrinterParameterized(WIN_HEADER, FONT_NORMAL, gText_Option, 8, 1, TEXT_SKIP_DRAW, NULL);
+    AddTextPrinterParameterized(WIN_HEADER, FONT_NORMAL, gText_Music, 8, 1, TEXT_SKIP_DRAW, NULL);
     CopyWindowToVram(WIN_HEADER, COPYWIN_FULL);
 }
 
