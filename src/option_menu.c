@@ -32,13 +32,13 @@
 enum
 {
     MENUITEM_VOLUME,
+    MENUITEM_SOUND,
     MENUITEM_TRACK,
     MENUITEM_COUNT,
     MENUITEM_FRAMETYPE,
     MENUITEM_TEXTSPEED,
     MENUITEM_BATTLESCENE,
     MENUITEM_BATTLESTYLE,
-    MENUITEM_SOUND,
     MENUITEM_BUTTONMODE,
     MENUITEM_CANCEL,
 };
@@ -84,7 +84,7 @@ static void DrawOptionMenuTexts(void);
 static void DrawBgWindowFrames(void);
 
 EWRAM_DATA static bool8 sArrowPressed = FALSE;
-EWRAM_DATA static bool8 sVolume = TRUE;
+EWRAM_DATA static bool8 sVolume = FALSE;
 EWRAM_DATA static u8 sTrack = 0;
 
 static const u16 sOptionMenuText_Pal[] = INCBIN_U16("graphics/interface/option_menu_text.gbapal");
@@ -95,6 +95,7 @@ static const u8 sEqualSignGfx[] = INCBIN_U8("graphics/interface/option_menu_equa
 static const u8 *const sOptionMenuItemsNames[MENUITEM_COUNT] =
 {
     [MENUITEM_VOLUME]      = gText_Volume,
+    [MENUITEM_SOUND]       = gText_Sound,
     [MENUITEM_TRACK]       = gText_Track,
 };
 
@@ -253,13 +254,14 @@ void CB2_InitOptionMenu(void)
         gTasks[taskId].tSound = gSaveBlock2Ptr->optionsSound;
         gTasks[taskId].tButtonMode = gSaveBlock2Ptr->optionsButtonMode;
         gTasks[taskId].tWindowFrameType = gSaveBlock2Ptr->optionsWindowFrameType;
+        gTasks[taskId].tVolume = 1;
 
-        sVolume = TRUE;
+        sVolume = FALSE;
 
         Volume_DrawChoices(gTasks[taskId].tVolume);
         Track_DrawChoices(gTasks[taskId].tTrack);
+        Sound_DrawChoices(gTasks[taskId].tSound);
         HighlightOptionMenuItem(gTasks[taskId].tMenuSelection);
-        PlayMapChosenOrBattleBGM(tracks[sTrack].song);
 
         CopyWindowToVram(WIN_OPTIONS, COPYWIN_FULL);
         gMain.state++;
@@ -538,6 +540,8 @@ static void Sound_DrawChoices(u8 selection)
     styles[0] = 0;
     styles[1] = 0;
     styles[selection] = 1;
+
+    gSaveBlock2Ptr->optionsSound = selection;
 
     DrawOptionMenuChoice(gText_SoundMono, 104, YPOS_SOUND, styles[0]);
     DrawOptionMenuChoice(gText_SoundStereo, GetStringRightAlignXOffset(FONT_NORMAL, gText_SoundStereo, 198), YPOS_SOUND, styles[1]);

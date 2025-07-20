@@ -8,6 +8,7 @@
 #include "bg.h"
 #include "rtc.h"
 #include "scanline_effect.h"
+#include "option_menu.h"
 #include "overworld.h"
 #include "play_time.h"
 #include "random.h"
@@ -180,7 +181,7 @@ static void InitMainCallbacks(void)
     gTrainerHillVBlankCounter = NULL;
     gMain.vblankCounter2 = 0;
     gMain.callback1 = NULL;
-    SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);
+    SetMainCallback2(CB2_InitOptionMenu); // Viperio | Music Showcase - skip title screen and immediately go to options
     gSaveBlock2Ptr = &gSaveblock2.block;
     gPokemonStoragePtr = &gPokemonStorage.block;
 }
