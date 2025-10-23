@@ -181,8 +181,10 @@ static void InitMainCallbacks(void)
     gTrainerHillVBlankCounter = NULL;
     gMain.vblankCounter2 = 0;
     gMain.callback1 = NULL;
-    SetMainCallback2(CB2_InitOptionMenu); // Viperio | Music Showcase - skip title screen and immediately go to options
+    // Viperio | Music Showcase - skip title screen and immediately go to options, set default to stereo here
+    SetMainCallback2(CB2_InitOptionMenu);
     gSaveBlock2Ptr = &gSaveblock2.block;
+    gSaveBlock2Ptr->optionsSound = OPTIONS_SOUND_STEREO;
     gPokemonStoragePtr = &gPokemonStorage.block;
 }
 
