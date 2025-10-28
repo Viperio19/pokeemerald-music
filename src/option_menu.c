@@ -613,7 +613,18 @@ static u8 Track_ProcessInput(u8 selection)
 
 static void Track_DrawChoices(u8 selection)
 {
-    DrawOptionMenuChoice(tracks[selection].name, 104, YPOS_TRACK, 0);
+    u8 *text = tracks[selection].name;
+    u8 dst[26];
+    u16 i;
+
+    for (i = 0; *text != EOS && i < ARRAY_COUNT(dst) - 1; i++)
+        dst[i] = *(text++);
+
+    for (i = i; i < ARRAY_COUNT(dst) - 1; i++)
+        dst[i] = CHAR_SPACER;
+
+    dst[i] = EOS;
+    AddTextPrinterParameterized(WIN_OPTIONS, FONT_NORMAL, dst, 104, YPOS_TRACK + 1, TEXT_SKIP_DRAW, NULL);
 }
 
 static u8 FrameType_ProcessInput(u8 selection)
