@@ -8,6 +8,7 @@
 #include "bg.h"
 #include "rtc.h"
 #include "scanline_effect.h"
+#include "option_menu.h"
 #include "overworld.h"
 #include "play_time.h"
 #include "random.h"
@@ -180,8 +181,10 @@ static void InitMainCallbacks(void)
     gTrainerHillVBlankCounter = NULL;
     gMain.vblankCounter2 = 0;
     gMain.callback1 = NULL;
-    SetMainCallback2(CB2_InitCopyrightScreenAfterBootup);
+    // Viperio | Music Showcase - skip title screen and immediately go to options, set default to stereo here
+    SetMainCallback2(CB2_InitOptionMenu);
     gSaveBlock2Ptr = &gSaveblock2.block;
+    gSaveBlock2Ptr->optionsSound = OPTIONS_SOUND_STEREO;
     gPokemonStoragePtr = &gPokemonStorage.block;
 }
 
